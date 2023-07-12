@@ -1,3 +1,11 @@
+/*
+ * @Descripttion:
+ * @version:
+ * @Author: xp.Zhang
+ * @Date: 2023-07-12 10:10:57
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-07-12 13:35:56
+ */
 #include "socket.hh"
 #include "util.hh"
 
@@ -16,7 +24,27 @@ void get_URL(const string &host, const string &path) {
     // Then you'll need to print out everything the server sends back,
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
+    TCPSocket myTCPSocket;
+    //主机名由DNS转换为IP， 端口为http端口
+    myTCPSocket.connect(Address(host, "http"));
+    myTCPSocket.write("GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n");
+    //客户端相当于再说connection close 和服务器说我不再写入东西给你了
+    myTCPSocket.shutdown(SHUT_WR);
+    while (!myTCPSocket.eof()) {
+        cout << myTCPSocket.read();
+    }
+    myTCPSocket.close();
+    return;
 
+    // TCPSocket sock{};
+    // sock.connect(Address(host,"http"));
+    // sock.write("GET "+path+" HTTP/1.1\r\nHost: "+host+"\r\n\r\n");
+    // sock.shutdown(SHUT_WR);
+    // while(!sock.eof()){
+    //     cout<<sock.read();
+    // }
+    // sock.close();
+    // return;
     cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
     cerr << "Warning: get_URL() has not been implemented yet.\n";
 }

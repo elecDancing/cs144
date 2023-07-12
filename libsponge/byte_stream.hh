@@ -1,3 +1,11 @@
+/*
+ * @Descripttion:
+ * @version:
+ * @Author: xp.Zhang
+ * @Date: 2023-07-12 15:22:53
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-07-12 17:44:55
+ */
 #ifndef SPONGE_LIBSPONGE_BYTE_STREAM_HH
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
 
@@ -16,8 +24,12 @@
 class ByteStream {
   private:
     // Your code here -- add private members as necessary.
-
-    bool _error{};  //!< Flag indicating that the stream suffered an error.
+    std::deque<char> _buffer = {};
+    size_t _capacity = 0;
+    size_t _readCount = 0;
+    size_t _writeCount = 0;
+    bool _endInput_flag = false;
+    bool _error = false;  //!< Flag indicating that the stream suffered an error.
 
   public:
     //! Construct a stream with room for `capacity` bytes.
