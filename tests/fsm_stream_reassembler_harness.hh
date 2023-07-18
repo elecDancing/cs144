@@ -159,6 +159,7 @@ struct SubmitSegment : public ReassemblerAction {
 };
 
 class ReassemblerTestHarness {
+    //!类里面的一个成员变量就是一个重组的流
     StreamReassembler reassembler;
     std::vector<std::string> steps_executed;
 
