@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-13 11:01:15
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-07-18 09:40:56
+ * @LastEditTime: 2023-07-18 09:57:21
  */
 #include "stream_reassembler.hh"
 
@@ -108,18 +108,18 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         while ((merged_bytes = mergeTwoSegment(elm, *iter)) >= 0) {  //?為什麼要加=呢，經過debug之后发现merge两个不同的段，这两个段可能没有重叠，返回的merged_bytes当然是0但是肯定有合并操作
             _unassembled_byte -= merged_bytes;
             //!!!!!!!!!!!!!!!
-            // auto temp = iter;
-            // iter--;
-            // _segments.erase(temp);
-            // if (iter == _segments.begin()) {
-            //     break;
-            // }
-            _segments.erase(iter);
-            iter = _segments.lower_bound(elm);
+            auto temp = iter;
+            iter--;
+            _segments.erase(temp);
             if (iter == _segments.begin()) {
                 break;
             }
-            iter--;
+            // _segments.erase(iter);
+            // iter = _segments.lower_bound(elm);
+            // if (iter == _segments.begin()) {
+            //     break;
+            // }
+            // iter--;
         }
 
     } while (false);
