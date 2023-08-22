@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-21 16:22:49
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-08-22 17:16:35
+ * @LastEditTime: 2023-08-22 20:36:18
  */
 #include "tcp_receiver.hh"
 
@@ -19,7 +19,11 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 using namespace std;
 //实现一个基于滑动窗口的TCP接收端
 bool TCPReceiver::segment_received(const TCPSegment &seg) {
-    if(seg.header().syn){//如果是第一个segment，进行处理
+    uint64_t abs_seqno = 0;
+    uint64_t abs_ackno = 0;
+    size_t length = 0;
+    // 第一个segment
+    if (seg.header().syn) {  // 如果是第一个segment，进行处理
         if(_syn_flag){
             return false; //重复收到两个syn ，refuse
         }
@@ -28,26 +32,19 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
         //data index eof
         //查看segment的长度（length_in_sequence_space包含playload ，syn ，fin 的总长度）
         size_t PyloadLength = seg.length_in_sequence_space() - 1;
-
-        if (Pyloadlength == 0) {  //! segment's content only have a SYN flag
+        abs_seqno = 1;
+        _ackno = ackno();
+        if (PyloadLength == 0) {  //! segment's content only have a SYN flag
             return true;
         }
-
-        // //?为什么用了copy之后 才会变成string类型？
-        // _reassembler.push_substring(seg.payload().copy(), 0, seg.header().fin);
-        // if(seg.header().fin){
-        //     _fin_flag = true;
-        // }
-        // //!注意重组器中是absolute seqno
-        // //!更新ackno
-        // _ackno = ackno();
-        // return true;
     }
-    else if(!_syn_flag) //在synFlag为真之前拒绝所有段
+    else if (!_syn_flag)  // 在synFlag为真之前拒绝所有段
         return false;
+    //后续segment
     else{ //synFlag为真后到来的代码段
-        uint64_t abs_seqno = unwrap(seg.header().seqno, _isn.value(), _reassembler.head_index());
-        size_t length = seg.length_insequence_space();
+        abs_seqno = unwrap(seg.header().seqno, _isn.value(), _reassembler.head_index());
+        abs_ackno = unwrap(_ackno.value(), _isn.value(), _reassembler.head_index());
+        length = seg.length_in_sequence_space();
     }
     
     if (seg.header().fin) {
@@ -55,21 +52,21 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
             return false;
         }
         _fin_flag = true;
-        ret = true;
     }
-    uint64_t abs_seqno = unwrap(seg.header().seqno, _isn.value(), _reassembler.head_index());
-    // if(WrappingInt32(seg.header().seqno- 1)+ WrappingInt32(seg.payload().size())< int32_t(_ackno.value().raw_value()))
-    //     return false;
+    //空报文段检查
+    else if(seg.length_in_sequence_space() == 0 && abs_seqno == abs_ackno){
+        return true;
+    }
+    /* 检查当前段的绝对序列号是否在接收窗口之外。如果绝对序列号大于等于基准序列号加上窗口大小，
+    或者绝对序列号加上段的长度小于等于基准序列号，那么当前段与接收窗口没有重叠，
+    应被丢弃。如果此时ret标志为false，说明之前没有成功接收到过段，因此函数返回false表示接收失败。 */
+    else if(abs_seqno >= abs_ackno + window_size() || abs_seqno + length <= abs_ackno){
+        return false;
+    }
     // 由于syn占用了一个字节，在初始的segment中，由于syn的存在，接收端接收到的相对序列号其实加了1
     // 同理，当更新ackno的时候，重组器头部的绝对序列号要+1 才能去解包到相对序列号
     _reassembler.push_substring(seg.payload().copy(), abs_seqno - 1, seg.header().fin);
-        if(seg.header().fin){
-                _fin_flag = true;
-            }
-    WrappingInt32 tempAckno = _ackno.value();
     _ackno = ackno();
-    if(seg.header().seqno - 1 <= _ackno.value() && tempAckno >= _ackno.value())
-                return false;
     return true;
 }
 
