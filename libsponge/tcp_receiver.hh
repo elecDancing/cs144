@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: 
+ * @version: 
+ * @Author: xp.Zhang
+ * @Date: 2023-07-21 16:22:49
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-08-22 15:56:41
+ */
 #ifndef SPONGE_LIBSPONGE_TCP_RECEIVER_HH
 #define SPONGE_LIBSPONGE_TCP_RECEIVER_HH
 
@@ -16,7 +24,11 @@
 class TCPReceiver {
     //! Our data structure for re-assembling bytes.
     StreamReassembler _reassembler;
-
+    bool _syn_flag = false;
+    bool _fin_flag = false;
+    size_t _base = 0;  // when unintital, equal zero for ackno special judge
+    std::optional<WrappingInt32> _isn = {};  // optional 表明在类TCPReceiver中_isn是可选的（可以不存在）
+    std::optional<WrappingInt32> _ackno = {};
     //! The maximum number of bytes we'll store.
     size_t _capacity;
 
@@ -35,7 +47,7 @@ class TCPReceiver {
     //!
     //! This is the beginning of the receiver's window, or in other words, the sequence number
     //! of the first byte in the stream that the receiver hasn't received.
-    std::optional<WrappingInt32> ackno() const;
+    std::optional<WrappingInt32> ackno() const; 
 
     //! \brief The window size that should be sent to the peer
     //!

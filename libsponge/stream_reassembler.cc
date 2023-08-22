@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-13 11:01:15
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-07-18 09:57:21
+ * @LastEditTime: 2023-08-22 15:13:35
  */
 #include "stream_reassembler.hh"
 
@@ -66,13 +66,13 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     // case2.1.1 到来的整个报文段都有序字节流中都已经存在
     if (index + data.size() <= _head_index) {  //表明新来的报文段已经写到了bytestream中了
         //判断新来的报文段是否携带了eof信息（携带eof信息的都发走了，说明eof及之前的段都排列好发走了，说明不会在接受到有用的报文段了）
-    if (eof) {
-        _eof_flag = true;
-    }
-    if (_eof_flag && empty()) {  //重组器中是空的 _unreassembler == 0
-        _output.end_input();     //关闭字节流输入，不会再有字节从重组器输入字节流了
-    }
-    return;
+        if (eof) {
+            _eof_flag = true;
+        }
+        if (_eof_flag && empty()) {  //重组器中是空的 _unreassembler == 0
+            _output.end_input();     //关闭字节流输入，不会再有字节从重组器输入字节流了
+        }
+        return;
 
     }
     // case2.1.2 到来的整个报文段部分在有序字节流中都已经存在
@@ -105,17 +105,11 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
             break;
         }
         iter--;
-        while ((merged_bytes = mergeTwoSegment(elm, *iter)) >= 0) {  //?為什麼要加=呢，經過debug之后发现merge两个不同的段，这两个段可能没有重叠，返回的merged_bytes当然是0但是肯定有合并操作
+        if ((merged_bytes = mergeTwoSegment(elm, *iter)) >= 0) {  //?為什麼要加=呢，經過debug之后发现merge两个不同的段，这两个段可能没有重叠，返回的merged_bytes当然是0但是肯定有合并操作
             _unassembled_byte -= merged_bytes;
             //!!!!!!!!!!!!!!!
-            auto temp = iter;
-            iter--;
-            _segments.erase(temp);
-            if (iter == _segments.begin()) {
-                break;
-            }
-            // _segments.erase(iter);
-            // iter = _segments.lower_bound(elm);
+            _segments.erase(iter);
+            // iter = _segments.lower_bound(elm);//
             // if (iter == _segments.begin()) {
             //     break;
             // }

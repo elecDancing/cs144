@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-13 11:01:15
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-07-17 15:08:34
+ * @LastEditTime: 2023-08-20 21:39:11
  */
 #ifndef SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
 #define SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
@@ -40,6 +40,10 @@ class StreamReassembler {
     size_t _capacity;    //!< The maximum number of bytes
 
   public:
+  // 返回重组器的头部序号
+    size_t head_index() const { return _head_index; }
+    //字节流不再输入重组器件的标志
+    bool input_ended() const { return _output.input_ended(); }
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
     //! and those that have not yet been reassembled.

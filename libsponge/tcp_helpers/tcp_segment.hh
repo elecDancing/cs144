@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: 
+ * @version: 
+ * @Author: xp.Zhang
+ * @Date: 2023-07-21 16:22:49
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-08-18 16:18:02
+ */
 #ifndef SPONGE_LIBSPONGE_TCP_SEGMENT_HH
 #define SPONGE_LIBSPONGE_TCP_SEGMENT_HH
 
@@ -26,7 +34,7 @@ class TCPSegment {
 
     const Buffer &payload() const { return _payload; }
     Buffer &payload() { return _payload; }
-    //!@}
+    //!
 
     //! \brief Segment's length in sequence space
     //! \note Equal to payload length plus one byte if SYN is set, plus one byte if FIN is set

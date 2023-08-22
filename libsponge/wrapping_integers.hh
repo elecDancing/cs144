@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: 
+ * @version: 
+ * @Author: xp.Zhang
+ * @Date: 2023-07-21 16:22:49
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-08-22 16:50:28
+ */
 #ifndef SPONGE_LIBSPONGE_WRAPPING_INTEGERS_HH
 #define SPONGE_LIBSPONGE_WRAPPING_INTEGERS_HH
 
@@ -12,7 +20,7 @@ class WrappingInt32 {
 
   public:
     //! Construct from a raw 32-bit unsigned integer
-    explicit WrappingInt32(uint32_t raw_value) : _raw_value(raw_value) {}
+     explicit WrappingInt32(uint32_t raw_value) : _raw_value(raw_value) {}
 
     uint32_t raw_value() const { return _raw_value; }  //!< Access raw stored value
 };
@@ -45,10 +53,13 @@ uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint);
 //! negative if the number of decrements needed is less than or equal to
 //! the number of increments
 inline int32_t operator-(WrappingInt32 a, WrappingInt32 b) { return a.raw_value() - b.raw_value(); }
+inline int32_t operator+(WrappingInt32 a, WrappingInt32 b) { return a.raw_value() + b.raw_value(); }
 
 //! \brief Whether the two integers are equal.
 inline bool operator==(WrappingInt32 a, WrappingInt32 b) { return a.raw_value() == b.raw_value(); }
 
+inline bool operator>=(WrappingInt32 a, WrappingInt32 b) { return a.raw_value() >= b.raw_value(); }
+inline bool operator<=(WrappingInt32 a, WrappingInt32 b) { return a.raw_value() <= b.raw_value(); }
 //! \brief Whether the two integers are not equal.
 inline bool operator!=(WrappingInt32 a, WrappingInt32 b) { return !(a == b); }
 
