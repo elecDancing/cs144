@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-21 16:22:49
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-08-22 20:36:18
+ * @LastEditTime: 2023-08-22 20:50:37
  */
 #include "tcp_receiver.hh"
 
@@ -66,6 +66,8 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
     // 由于syn占用了一个字节，在初始的segment中，由于syn的存在，接收端接收到的相对序列号其实加了1
     // 同理，当更新ackno的时候，重组器头部的绝对序列号要+1 才能去解包到相对序列号
     _reassembler.push_substring(seg.payload().copy(), abs_seqno - 1, seg.header().fin);
+    if(_fin_flag)
+        _reassembler.stream_out().end_input();
     _ackno = ackno();
     return true;
 }

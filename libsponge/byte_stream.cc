@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-12 15:22:53
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-07-13 11:01:26
+ * @LastEditTime: 2023-08-22 21:28:57
  */
 #include "byte_stream.hh"
 
@@ -66,7 +66,6 @@ void ByteStream::pop_output(const size_t len) {
         }
         return;
     }
-    set_error();
     return;
 }
 
