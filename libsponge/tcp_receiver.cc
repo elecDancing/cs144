@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-21 16:22:49
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-08-22 20:50:37
+ * @LastEditTime: 2023-08-23 11:39:12
  */
 #include "tcp_receiver.hh"
 
@@ -19,6 +19,8 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 using namespace std;
 //实现一个基于滑动窗口的TCP接收端
 bool TCPReceiver::segment_received(const TCPSegment &seg) {
+    //reassembler 中使用的都是绝对序列号
+    //ackno 为相对序列号，但是为了判断在resssmenbler中的边界条件，需要定义abs_ackno
     uint64_t abs_seqno = 0;
     uint64_t abs_ackno = 0;
     size_t length = 0;
