@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-21 16:22:49
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-08-23 11:39:12
+ * @LastEditTime: 2023-08-23 15:38:07
  */
 #include "tcp_receiver.hh"
 
@@ -49,27 +49,27 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
         length = seg.length_in_sequence_space();
     }
     
+    /* 检查当前段的绝对序列号是否在接收窗口之外。如果绝对序列号大于等于基准序列号加上窗口大小，
+    或者绝对序列号加上段的长度小于等于基准序列号，那么当前段与接收窗口没有重叠，
+    应被丢弃。如果此时ret标志为false，说明之前没有成功接收到过段，因此函数返回false表示接收失败。 */
+    //!超出接收窗口检查，重复报文检查
+    if(abs_seqno >= abs_ackno + window_size() || abs_seqno + length <= abs_ackno){
+        return false;
+    }
+    //!报文截止检测
     if (seg.header().fin) {
         if (_fin_flag) {  // already get a FIN, refuse other FIN
             return false;
         }
         _fin_flag = true;
     }
-    //空报文段检查
-    else if(seg.length_in_sequence_space() == 0 && abs_seqno == abs_ackno){
+    //!空报文段检查
+    if(seg.length_in_sequence_space() == 0 && abs_seqno == abs_ackno){
         return true;
-    }
-    /* 检查当前段的绝对序列号是否在接收窗口之外。如果绝对序列号大于等于基准序列号加上窗口大小，
-    或者绝对序列号加上段的长度小于等于基准序列号，那么当前段与接收窗口没有重叠，
-    应被丢弃。如果此时ret标志为false，说明之前没有成功接收到过段，因此函数返回false表示接收失败。 */
-    else if(abs_seqno >= abs_ackno + window_size() || abs_seqno + length <= abs_ackno){
-        return false;
     }
     // 由于syn占用了一个字节，在初始的segment中，由于syn的存在，接收端接收到的相对序列号其实加了1
     // 同理，当更新ackno的时候，重组器头部的绝对序列号要+1 才能去解包到相对序列号
     _reassembler.push_substring(seg.payload().copy(), abs_seqno - 1, seg.header().fin);
-    if(_fin_flag)
-        _reassembler.stream_out().end_input();
     _ackno = ackno();
     return true;
 }
