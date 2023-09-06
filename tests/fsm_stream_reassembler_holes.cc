@@ -10,6 +10,19 @@ using namespace std;
 
 int main() {
     try {
+
+        {
+            ReassemblerTestHarness test{65000};
+
+            test.execute(SubmitSegment{"bcd", 1});
+            test.execute(SubmitSegment{"hijk", 7});
+            test.execute(SubmitSegment{"def", 3});
+            test.execute(SubmitSegment{"ab", 0});
+
+            test.execute(BytesAssembled(6));
+            test.execute(BytesAvailable("abcdef"));
+            test.execute(NotAtEof{});
+        }
         {
             ReassemblerTestHarness test{65000};
 

@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: 
+ * @version: 
+ * @Author: xp.Zhang
+ * @Date: 2023-07-17 17:23:08
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-08-22 20:41:28
+ */
 #include "receiver_harness.hh"
 #include "wrapping_integers.hh"
 
@@ -16,7 +24,7 @@ int main() {
         auto rd = get_random_generator();
 
         {
-            uint32_t isn = uniform_int_distribution<uint32_t>{0, UINT32_MAX}(rd);
+            uint32_t isn = 0;
             TCPReceiverTestHarness test{4000};
             test.execute(ExpectState{TCPReceiverStateSummary::LISTEN});
             test.execute(SegmentArrives{}.with_syn().with_seqno(isn + 0).with_result(SegmentArrives::Result::OK));
