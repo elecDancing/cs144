@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: 
+ * @version: 
+ * @Author: xp.Zhang
+ * @Date: 2023-07-17 17:23:08
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-09-07 17:45:55
+ */
 #include "sender_harness.hh"
 #include "wrapping_integers.hh"
 
@@ -14,18 +22,6 @@ using namespace std;
 int main() {
     try {
         auto rd = get_random_generator();
-
-        {
-            TCPConfig cfg;
-            WrappingInt32 isn(rd());
-            cfg.fixed_isn = isn;
-
-            TCPSenderTestHarness test{"SYN sent test", cfg};
-            test.execute(ExpectState{TCPSenderStateSummary::SYN_SENT});
-            test.execute(ExpectSegment{}.with_no_flags().with_syn(true).with_payload_size(0).with_seqno(isn));
-            test.execute(ExpectBytesInFlight{1});
-        }
-
         {
             TCPConfig cfg;
             WrappingInt32 isn(rd());
@@ -40,6 +36,19 @@ int main() {
             test.execute(ExpectNoSegment{});
             test.execute(ExpectBytesInFlight{0});
         }
+
+        {
+            TCPConfig cfg;
+            WrappingInt32 isn(rd());
+            cfg.fixed_isn = isn;
+
+            TCPSenderTestHarness test{"SYN sent test", cfg};
+            test.execute(ExpectState{TCPSenderStateSummary::SYN_SENT});
+            test.execute(ExpectSegment{}.with_no_flags().with_syn(true).with_payload_size(0).with_seqno(isn));
+            test.execute(ExpectBytesInFlight{1});
+        }
+
+
 
         {
             TCPConfig cfg;

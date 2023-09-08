@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-09-06 10:53:22
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-09-06 22:06:46
+ * @LastEditTime: 2023-09-07 16:49:10
  */
 #include "tcp_sender.hh"
 
@@ -32,7 +32,36 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
 
 uint64_t TCPSender::bytes_in_flight() const { return {_bytes_in_flight}; }
 
-void TCPSender::fill_window() {}
+void TCPSender::fill_window() {
+    if(!_syn_flag){
+        TCPSegment seg;
+        seg.header().syn = true;
+        _syn_flag = true;
+        send_segment(seg);
+        return;
+    }
+    //接收窗口的大小不能为0(接收窗口包含空闲区域和发出确没有收到确认的段占用的区域)
+    size_t window_size = _window_size == 0 ? 1 : _window_size;
+    size_t free_space = window_size - _bytes_in_flight;
+    while (free_space > 0 && !_fin_flag){
+        size_t payloadSize = min(free_space, TCPConfig::MAX_PAYLOAD_SIZE);
+        string tempstr = _stream.read(payloadSize);
+        //判断一下是否读到了结束
+        TCPSegment seg;
+        //注意TCPsegment中的payload是一个buffer类型的
+        seg.payload() = Buffer(std::move(tempstr));
+        //第一个判断条件是为了我现在要在加入一个fin字节，避免溢出
+        if(seg.length_in_sequence_space() < free_space && !_stream.eof()){
+            seg.header().fin = true;
+            _fin_flag = true;
+        }
+        // //
+        // if(seg.length_in_sequence_space() == 0)
+        //     return;
+        send_segment(seg);
+        free_space = window_size - _bytes_in_flight;
+    }
+}
 
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
@@ -44,10 +73,10 @@ bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     if(abs_ackno >= _next_seqno){//sender还没发你ack都回来了
         return false;
     }
-    if(abs_ackno < _recv_ackno){//已经收到过了
+    if(abs_ackno <= _recv_ackno){//已经收到过了
         return true;
     }
-    uint64_t rwnd = window_size;//保存一下当前接收窗口的大小
+    _window_size = window_size;//更新一下当前接收窗口的大小
     _recv_ackno = abs_ackno; //更新，在abs_ackno之前的所有字节都收到了
     //更新未传输完成的队列
     while(!_segments_outstanding.empty()){
@@ -74,8 +103,41 @@ bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
-void TCPSender::tick(const size_t ms_since_last_tick) { DUMMY_CODE(ms_since_last_tick); }
+void TCPSender::tick(const size_t ms_since_last_tick) { 
+    _timer += ms_since_last_tick; 
+    if(_timer >= _RTO && !_segments_outstanding.empty()){
+        _segments_out.push(_segments_outstanding.front());
+        _RTO = 2 * _RTO;
+        _consecutive_retransmission++;
+        _timer_running = true;
+        _timer = 0;
+    }
+    if(_segments_outstanding.empty()){
+        _timer_running = false;
+        _timer = 0;
+    }
+}
 
-unsigned int TCPSender::consecutive_retransmissions() const { return {}; }
+unsigned int TCPSender::consecutive_retransmissions() const {
+    return  _consecutive_retransmission;
+}
 
-void TCPSender::send_empty_segment() {}
+void TCPSender::send_empty_segment() {
+     // empty segment doesn't need store to outstanding queue
+     TCPSegment tempseg;
+     _segments_out.push(tempseg);
+}
+
+void TCPSender::send_segment(TCPSegment &seg) { 
+    //给段分配的序列号是相对序列号
+    seg.header().seqno = wrap(_next_seqno, _isn);
+    _next_seqno += seg.length_in_sequence_space();
+    _bytes_in_flight += seg.length_in_sequence_space();
+    _segments_out.push(seg);
+    _segments_outstanding.push(seg);
+    //要是已经启动了呢？
+    // if(_timer_running == false){
+        _timer_running = true;
+        _timer = 0;
+    // }
+}

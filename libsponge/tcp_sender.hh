@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-09-06 10:53:22
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-09-06 21:45:53
+ * @LastEditTime: 2023-09-07 15:46:20
  */
 #ifndef SPONGE_LIBSPONGE_TCP_SENDER_HH
 #define SPONGE_LIBSPONGE_TCP_SENDER_HH
@@ -28,9 +28,10 @@ class TCPSender {
     //! our initial sequence number, the number for our SYN.
     WrappingInt32 _isn;
 
-    //! outbound queue of segments that the TCPSender wants sent
-    //只需要把要发送的segment放到这个segment outstanding这个队列里面就行了
     std::queue<TCPSegment> _segments_outstanding{};
+        //! outbound queue of segments that the TCPSender wants sent
+    //只需要把要发送的segment放到这个segment out这个队列里面就行了
+    std::queue<TCPSegment> _segments_out{};
     size_t _bytes_in_flight = 0;
     size_t _recv_ackno = 0;
     bool _syn_flag = false;
@@ -75,6 +76,8 @@ class TCPSender {
     //! \brief Generate an empty-payload segment (useful for creating empty ACK segments)
     void send_empty_segment();
 
+    void send_segment(TCPSegment& seg);
+
     //! \brief create and send segments to fill as much of the window as possible
     //接收端会给Sender一个window_size。 根据这个window_size，
     //如果窗口没填满，并且发送端有数据需要发送，就可以使用fill_window发送segment
@@ -101,7 +104,7 @@ class TCPSender {
     //! \note These must be dequeued and sent by the TCPConnection,
     //! which will need to fill in the fields that are set by the TCPReceiver
     //! (ackno and window size) before sending.
-    std::queue<TCPSegment> &segments_out() { return _segments_outstanding; }
+    std::queue<TCPSegment> &segments_out() { return _segments_out;}
     //!@}
 
     //! \name What is the next sequence number? (used for testing)
