@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-12 15:22:53
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-08-22 21:28:57
+ * @LastEditTime: 2023-09-15 11:09:38
  */
 #include "byte_stream.hh"
 
@@ -38,18 +38,22 @@ size_t ByteStream::write(const string &data) {
     return len;
 }
 
-//! \param[in] len bytes will be copied from the output side of the buffer
-// peek_output函数使用了const关键字修饰，因此它是一个常量成员函数。这意味着在调用该函数时，它不能修改ByteStream对象的状态，即不能修改任何成员变量的值
-//查看队列前端len个元素
+// //! \param[in] len bytes will be copied from the output side of the buffer
+// // peek_output函数使用了const关键字修饰，因此它是一个常量成员函数。这意味着在调用该函数时，它不能修改ByteStream对象的状态，即不能修改任何成员变量的值
+// //查看队列前端len个元素
 string ByteStream::peek_output(const size_t len) const {
     size_t length = len;
     if (length > _buffer.size())
         length = _buffer.size();
     string tempstr;
-    for (auto it = _buffer.begin(); it < _buffer.begin() + len; ++it) {
+    // return string().assign(_buffer.begin(), _buffer.begin() + length);
+    for (auto it = _buffer.begin(); it < _buffer.begin() + length; ++it) {
+        if(!_buffer.empty()){
         tempstr += *it;
+        }
     }
     return tempstr;
+    
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer
@@ -61,10 +65,10 @@ void ByteStream::pop_output(const size_t len) {
             length = _buffer.size();
         }
         _readCount += length;
-        for (size_t i = 0; i < len; ++i) {
+        for (size_t i = 0; i < length; ++i) {
             _buffer.pop_front();
         }
-        return;
+
     }
     return;
 }
@@ -75,7 +79,7 @@ bool ByteStream::input_ended() const { return {_endInput_flag}; }
 
 size_t ByteStream::buffer_size() const { return {_buffer.size()}; }
 
-bool ByteStream::buffer_empty() const { return {_buffer.empty()}; }
+bool ByteStream::buffer_empty() const { return _buffer.size() == 0; }
 
 bool ByteStream::eof() const {
     if (buffer_empty() && input_ended())
@@ -89,3 +93,4 @@ size_t ByteStream::bytes_written() const { return {_writeCount}; }
 size_t ByteStream::bytes_read() const { return {_readCount}; }
 
 size_t ByteStream::remaining_capacity() const { return {_capacity - buffer_size()}; }
+

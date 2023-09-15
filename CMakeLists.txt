@@ -12,6 +12,15 @@ include (etc/clang_format.cmake)
 include (etc/clang_tidy.cmake)
 include (etc/cppcheck.cmake)
 
+
+
+
+
+set(CMAKE_BUILD_TYPE "Debug")
+
+
+
+
 include_directories ("${PROJECT_SOURCE_DIR}/libsponge/util")
 include_directories ("${PROJECT_SOURCE_DIR}/libsponge/tcp_helpers")
 include_directories ("${PROJECT_SOURCE_DIR}/libsponge")
