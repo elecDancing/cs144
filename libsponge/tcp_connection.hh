@@ -20,14 +20,17 @@ class TCPConnection {
     //! for 10 * _cfg.rt_timeout milliseconds after both streams have ended,
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
     bool _linger_after_streams_finish{true};
+    bool _active = true;
+    bool _need_send_rst = false;
 
   public:
+    bool push_segments_out(bool send_syn = false);
     //! \name "Input" interface for the writer
     //!@{
-
+    bool in_syn_recv();
     //! \brief Initiate a connection by sending a SYN segment
     void connect();
-
+    bool clean_shutdown();
     //! \brief Write data to the outbound byte stream, and send it over TCP if possible
     //! \returns the number of bytes from `data` that were actually written.
     size_t write(const std::string &data);
