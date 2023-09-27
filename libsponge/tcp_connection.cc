@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-09-15 17:16:14
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-09-21 16:28:37
+ * @LastEditTime: 2023-09-27 16:14:39
  */
 #include "tcp_connection.hh"
 
@@ -26,21 +26,94 @@ size_t TCPConnection::bytes_in_flight() const { return _sender.bytes_in_flight()
 
 size_t TCPConnection::unassembled_bytes() const { return _receiver.unassembled_bytes(); }
 
-size_t TCPConnection::time_since_last_segment_received() const { return {}; }
+//每次segment_reveived的时候_time_since_last_segment_received都会归零
+size_t TCPConnection::time_since_last_segment_received() const { return _time_since_last_segment_received; }
 
-void TCPConnection::segment_received(const TCPSegment &seg) { DUMMY_CODE(seg); }
+void TCPConnection::segment_received(const TCPSegment &seg) { 
+    if(!_active)
+        return;
+    _time_since_last_segment_received = 0;
+    //在syn_sent状态下，收到不是回复syn的ack段，一律忽略
+    if (in_syn_sent() && seg.header().ack && seg.payload().size() > 0){
+        return;
+    }
+    // 如果段中包含rst标志
+    if (seg.header().rst) {
+        // TODO RST segments without ACKs should be ignored in SYN_SENT
+        //  有ack的话是对syn的回复，不能忽略
+        if (in_syn_sent() && !seg.header().ack) {
+            return;
+        }
+        unclean_shutdown(false);
+        return;
+    }
+    //设置一个发送空段标志位
+    bool send_empty = false;
+    //--keep alive机制
+    //对面终端发送一个不合法的ackno，用来测试TCP连接是否alive，需要给这些segments回复
+    //或者说只是单纯的收到了一个不合法的ackno
+    //本地已经开始发送，并且当前段中含有ack
+    if(_sender.next_seqno_absolute() > 0 && seg.header().ack){
+        //使用本地发送端的ack_received函数，返回的是ack是否合法
+        if(!_sender.ack_received(seg.header().ackno, seg.header().win)){
+            send_empty = true; 
+        }
+    }
+    //判断本地接收端是否正常接收这个段
+    bool recv_flag = false;
+    recv_flag = _receiver.segment_received(seg);
+    if(!recv_flag){
+        send_empty = true;
+    }
 
-bool TCPConnection::active() const { return {}; }
+    // 远端传来syn
+    if(seg.header().syn && _sender.next_seqno_absolute() == 0){
+        connect();
+        return;
+    }
 
-size_t TCPConnection::write(const string &data) {
-    DUMMY_CODE(data);
-    return {};
+    if(seg.payload().size() > 0){
+        send_empty = true;
+    }
+
+    if(send_empty){
+        //如果reveiver已经开始接收远端文件，但是sender的发送队列当前为空，就需要发送一个空段，
+        //用于确认当前段收到（也就是当前没有可以加上负载的段用于确认，所以只能勉为其难的发一个空段用于确认接收端收到的远端数据）
+        if(_receiver.ackno().has_value() && _sender.segments_out().empty()){
+            _sender.send_empty_segment();
+        }
+    }
+
+    push_segments_out();
 }
 
-//! \param[in] ms_since_last_tick number of milliseconds since the last call to this method
-void TCPConnection::tick(const size_t ms_since_last_tick) { DUMMY_CODE(ms_since_last_tick); }
+bool TCPConnection::active() const { return {_active}; }
 
-void TCPConnection::end_input_stream() {}
+size_t TCPConnection::write(const string &data) { 
+    //使用write函数写入data，函数内部考虑了缓冲区的大小
+    //放入sender流
+    size_t writeLen = _sender.stream_in().write(data);
+    //放入connection流 
+    push_segments_out();
+    return writeLen;
+ }
+
+//! \param[in] ms_since_last_tick number of milliseconds since the last call to this method
+void TCPConnection::tick(const size_t ms_since_last_tick) { 
+    if(!_active)
+        return;
+    _time_since_last_segment_received += ms_since_last_tick;
+    _sender.tick(ms_since_last_tick);
+    if(_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS){
+        unclean_shutdown(true);
+    }
+    push_segments_out();
+}
+
+void TCPConnection::end_input_stream() { 
+    _sender.stream_in().end_input();
+    push_segments_out();
+}
 
 //发送SYN段初始化连接
 void TCPConnection::connect() { 
@@ -69,7 +142,7 @@ bool TCPConnection::push_segments_out(bool send_syn) {
         //放入connection的发送队列
         _segments_out.push(seg);
     }
-    clean_shutdown();
+    clean_shutdown();//每次将segments放入connection的队列中的时候，都调用该函数判断一下是否要shutdown了
     return true;
 }
 
@@ -78,7 +151,7 @@ TCPConnection::~TCPConnection() {
         if (active()) {
             cerr << "Warning: Unclean shutdown of TCPConnection\n";
 
-            // Your code here: need to send a RST segment to the peer
+            unclean_shutdown(true);
         }
     } catch (const exception &e) {
         std::cerr << "Exception destructing TCP FSM: " << e.what() << std::endl;
@@ -106,6 +179,30 @@ bool TCPConnection::clean_shutdown(){
     return !_active;
 }
 
+bool TCPConnection::unclean_shutdown(bool sent_rst) { 
+    //将出入数据流都设置在error_state
+    _sender.stream_in().set_error();
+    _receiver.stream_out().set_error();
+    //将tcpconnection活跃状态标志关闭
+    _active = false;
+    //如果本地TCPConnection主动发出rst
+    if(sent_rst){
+        _need_send_rst = true;
+        if(_sender.segments_out().empty()){
+            _sender.send_empty_segment();
+        }
+        push_segments_out();
+    }
+}
+
+bool TCPConnection::in_listen(){ 
+    return (!_receiver.ackno().has_value() && _sender.next_seqno_absolute() == 0); 
+}
+bool TCPConnection::in_syn_sent(){
+    //return (!_receiver.ackno().has_value() && _sender.next_seqno_absolute() > 0 &&
+            //_sender.next_seqno_absolute() == bytes_in_flight());
+    return (_sender.next_seqno_absolute() > 0 && _sender.next_seqno_absolute() == bytes_in_flight());
+}
 bool TCPConnection::in_syn_recv(){
     if(_receiver.ackno().has_value() && !_receiver.stream_out().input_ended())
         return true;
