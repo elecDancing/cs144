@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-21 16:22:49
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-08-23 15:38:07
+ * @LastEditTime: 2023-09-28 12:05:27
  */
 #include "tcp_receiver.hh"
 
@@ -53,16 +53,21 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
     或者绝对序列号加上段的长度小于等于基准序列号，那么当前段与接收窗口没有重叠，
     应被丢弃。如果此时ret标志为false，说明之前没有成功接收到过段，因此函数返回false表示接收失败。 */
     //!超出接收窗口检查，重复报文检查
-    if(abs_seqno >= abs_ackno + window_size() || abs_seqno + length <= abs_ackno){
+    if(abs_seqno >= abs_ackno + window_size()){
         return false;
     }
-    //!报文截止检测
-    if (seg.header().fin) {
-        if (_fin_flag) {  // already get a FIN, refuse other FIN
+    if (abs_seqno + length <= abs_ackno){
+        //如果收到的段不携带负载的话absseqno 和 abs_ackno相等没什么问题
+        if(length != 0)
             return false;
-        }
-        _fin_flag = true;
     }
+        //!报文截止检测
+        if (seg.header().fin) {
+            if (_fin_flag) {  // already get a FIN, refuse other FIN
+                return false;
+            }
+            _fin_flag = true;
+        }
     //!空报文段检查
     if(seg.length_in_sequence_space() == 0 && abs_seqno == abs_ackno){
         return true;

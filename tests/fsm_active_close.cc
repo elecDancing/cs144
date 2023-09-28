@@ -16,6 +16,26 @@ using State = TCPTestHarness::State;
 int main() {
     try {
         TCPConfig cfg{};
+        {
+            TCPTestHarness test_2 = TCPTestHarness::in_closing(cfg);
+            test_2.execute(Tick(4 * cfg.rt_timeout));
+            test_2.execute(ExpectOneSegment{}.with_fin(true));
+
+            test_2.execute(ExpectState{State::CLOSING});
+            cout << " error 2" << endl;
+            test_2.send_ack(WrappingInt32{2}, WrappingInt32{2});
+            test_2.execute(ExpectNoSegment{});
+            cout << " error3" << endl;
+            test_2.execute(ExpectState{State::TIME_WAIT});
+
+            test_2.execute(Tick(10 * cfg.rt_timeout - 1));
+
+            test_2.execute(ExpectState{State::TIME_WAIT});
+
+            test_2.execute(Tick(2));
+
+            test_2.execute(ExpectState{State::CLOSED});
+        }
 
         // test #1: start in TIME_WAIT, timeout
         {
@@ -35,26 +55,7 @@ int main() {
         }
 
         // test #2: start in CLOSING, send ack, time out
-        {
-            TCPTestHarness test_2 = TCPTestHarness::in_closing(cfg);
 
-            test_2.execute(Tick(4 * cfg.rt_timeout));
-            test_2.execute(ExpectOneSegment{}.with_fin(true));
-
-            test_2.execute(ExpectState{State::CLOSING});
-            test_2.send_ack(WrappingInt32{2}, WrappingInt32{2});
-            test_2.execute(ExpectNoSegment{});
-
-            test_2.execute(ExpectState{State::TIME_WAIT});
-
-            test_2.execute(Tick(10 * cfg.rt_timeout - 1));
-
-            test_2.execute(ExpectState{State::TIME_WAIT});
-
-            test_2.execute(Tick(2));
-
-            test_2.execute(ExpectState{State::CLOSED});
-        }
 
         // test #3: start in FIN_WAIT_2, send FIN, time out
         {

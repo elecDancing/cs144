@@ -22,7 +22,7 @@ class TCPConnection {
     bool _linger_after_streams_finish{true};
     bool _active = true;
     bool _need_send_rst = false;
-    bool _time_since_last_segment_received = 0;
+    int _time_since_last_segment_received = 0;
 
   public:
     bool push_segments_out(bool send_syn = false);
@@ -34,7 +34,7 @@ class TCPConnection {
     //! \brief Initiate a connection by sending a SYN segment
     void connect();
     bool clean_shutdown();
-    bool unclean_shutdown(bool send_rst);
+    void unclean_shutdown(bool send_rst);
     //! \brief Write data to the outbound byte stream, and send it over TCP if possible
     //! \returns the number of bytes from `data` that were actually written.
     size_t write(const std::string &data);
