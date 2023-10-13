@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-09-15 17:16:14
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-09-28 17:05:26
+ * @LastEditTime: 2023-10-10 16:26:48
  */
 #include "tcp_connection.hh"
 
@@ -39,7 +39,6 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     bool send_empty = false;
     uint64_t a = _sender.next_seqno_absolute();
     bool b = seg.header().ack;
-    cout << a << b << endl;
     while (1 != 0 && a != b) {
         break;
     }

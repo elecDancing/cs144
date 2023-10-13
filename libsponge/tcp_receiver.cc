@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-21 16:22:49
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-09-28 12:05:27
+ * @LastEditTime: 2023-10-10 15:45:20
  */
 #include "tcp_receiver.hh"
 
@@ -59,6 +59,8 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
     if (abs_seqno + length <= abs_ackno){
         //如果收到的段不携带负载的话absseqno 和 abs_ackno相等没什么问题
         if(length != 0)
+            return false;
+        if(length == 0 && abs_seqno < abs_ackno)
             return false;
     }
         //!报文截止检测

@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-09-06 10:53:22
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-09-21 10:33:13
+ * @LastEditTime: 2023-10-10 16:09:03
  */
 #include "tcp_sender.hh"
 
@@ -129,7 +129,6 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
     }
     if(_segments_outstanding.empty()){
         _timer_running = false;
-        _timer = 0;
     }
 }
 
@@ -152,9 +151,9 @@ void TCPSender::send_segment(TCPSegment &seg) {
     _bytes_in_flight += seg.length_in_sequence_space();
     _segments_out.push(seg);
     _segments_outstanding.push(seg);
-    //要是已经启动了呢？
-    //if(_timer_running == false){
+    //要是已经启动了呢？ 已经启动了_timer
+    if(_timer_running == false){
         _timer_running = true;
         _timer = 0;
-    //}
+    }
 }
