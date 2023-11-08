@@ -1,3 +1,11 @@
+/*
+ * @Descripttion: 
+ * @version: 
+ * @Author: xp.Zhang
+ * @Date: 2023-11-06 18:00:19
+ * @LastEditors: xp.Zhang
+ * @LastEditTime: 2023-11-07 03:41:14
+ */
 #ifndef SPONGE_LIBSPONGE_NETWORK_INTERFACE_HH
 #define SPONGE_LIBSPONGE_NETWORK_INTERFACE_HH
 
@@ -7,6 +15,7 @@
 
 #include <optional>
 #include <queue>
+#include <map>
 
 //! \brief A "network interface" that connects IP (the internet layer, or network layer)
 //! with Ethernet (the network access layer, or link layer).
@@ -40,7 +49,32 @@ class NetworkInterface {
     //! outbound queue of Ethernet frames that the NetworkInterface wants sent
     std::queue<EthernetFrame> _frames_out{};
 
+    struct arp_item
+    {
+        EthernetAddress mac;
+        size_t ttl;
+    };
+    struct waiting_frame
+    {
+        EthernetFrame frame;
+        uint32_t ip;
+    };
+
+    //IP - MAC arp table
+    std::map<uint32_t, arp_item> _table{};
+    //waiting frames
+    std::queue<waiting_frame> _frames_waiting{};
+    //waiting
+    size_t _timer = 0;
+    // pending arguements next_hop_ip
+    std::queue<uint32_t> _pending_arg{};
+    size_t _pending_timer = 0;
+    bool _pending_flag = false;
+
   public:
+    void _retransmission_arp_frame();
+
+    bool _ethernet_address_equal(const EthernetAddress &a, const EthernetAddress &b);
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses
     NetworkInterface(const EthernetAddress &ethernet_address, const Address &ip_address);
 
