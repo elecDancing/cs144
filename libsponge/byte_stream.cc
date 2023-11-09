@@ -45,15 +45,8 @@ string ByteStream::peek_output(const size_t len) const {
     size_t length = len;
     if (length > _buffer.size())
         length = _buffer.size();
-    string tempstr;
-    // return string().assign(_buffer.begin(), _buffer.begin() + length);
-    for (auto it = _buffer.begin(); it < _buffer.begin() + length; ++it) {
-        if(!_buffer.empty()){
-        tempstr += *it;
-        }
-    }
-    return tempstr;
-    
+    return string().assign(_buffer.begin(), _buffer.begin() + length);
+   
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer

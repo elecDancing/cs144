@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-07-12 15:22:53
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-09-15 10:59:01
+ * @LastEditTime: 2023-11-09 00:01:16
  */
 #ifndef SPONGE_LIBSPONGE_BYTE_STREAM_HH
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
@@ -24,6 +24,7 @@
 class ByteStream {
   private:
     // Your code here -- add private members as necessary.
+
     std::deque<char> _buffer = {};
     size_t _capacity = 0;
     size_t _readCount = 0;

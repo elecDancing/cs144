@@ -4,7 +4,7 @@
  * @Author: xp.Zhang
  * @Date: 2023-11-06 18:00:19
  * @LastEditors: xp.Zhang
- * @LastEditTime: 2023-11-07 04:36:55
+ * @LastEditTime: 2023-11-07 22:41:46
  */
 #include "network_interface.hh"
 
@@ -62,9 +62,9 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
 //! \param[in] frame the incoming Ethernet frame
 optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &frame) {
     //determine whether frame needs to be receives locally
-    bool isArpFrame = _ethernet_address_equal(frame.header().dst, ETHERNET_BROADCAST);
+    bool isBoardcastArpFrame = _ethernet_address_equal(frame.header().dst, ETHERNET_BROADCAST);
     bool isnormalFrame = _ethernet_address_equal(frame.header().dst, _ethernet_address);
-    if(!isArpFrame && !isnormalFrame)
+    if(!isBoardcastArpFrame && !isnormalFrame)
         return nullopt;
     else if (frame.header().type == EthernetHeader::TYPE_IPv4) // return InternetDatagram
     {
